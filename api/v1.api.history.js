@@ -15,6 +15,8 @@ module.exports = (app, DB, swaggerSpec) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(swaggerSpec);
   });
+  app.get('/v1/history/get_blocks', wrapper(getBlocks));
+  app.get('/v1/history/get_transactions', wrapper(getTransactions));
   app.get('/v1/history/get_account/:name', wrapper(getAccount));
   app.get('/v1/history/get_contract/:name', wrapper(getContract));
   app.get('/v1/history/get_contract_actions/:name', wrapper(getContractActions));
@@ -407,6 +409,20 @@ module.exports = (app, DB, swaggerSpec) => {
     });
   }
 
+  async function getTransactions(req, res) {
+    let skip = 0;
+    let limit = 10;
+    let sort = -1;
+    res.json({ transactions: await DB.collection("transactions").find({}).limit(limit).skip(skip).sort({ createdAt: sort }).toArray() });
+  }
+
+  async function getBlocks(req, res) {
+    let skip = 0;
+    let limit = 10;
+    let sort = -1;
+    res.json({ blocks: await DB.collection("blocks").find({}).limit(limit).skip(skip).sort({ block_num: sort }).toArray() });
+  }
+
   function getTransactionPOST(req, res) {
     let key = String(req.body.id);
     if (key === "undefined") {
@@ -608,14 +624,13 @@ module.exports = (app, DB, swaggerSpec) => {
     let skip = 0;
     let limit = 10;
     let sort = -1;
-    let accountName = String(req.params.name);
+    let contractName = String(req.params.name);
     let action = String(req.params.action);
 
-    let query = {
-      $or: [
-        { "act.account": accountName }
-      ]
-    };
+    let query = {};
+    if (contractName !== 'undefined') {
+      query["act.account"] = contractName;
+    }
     if (action !== "undefined" && action !== "all") {
       query["act.name"] = action;
     }
