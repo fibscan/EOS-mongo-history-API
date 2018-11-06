@@ -16,6 +16,7 @@ module.exports = (app, DB, swaggerSpec) => {
     res.send(swaggerSpec);
   });
   app.get('/v1/history/get_blocks', wrapper(getBlocks));
+  app.get('/v1/history/statistics', wrapper(getBlocks));
   app.get('/v1/history/get_transactions', wrapper(getTransactions));
   app.get('/v1/history/get_account/:name', wrapper(getAccount));
   app.get('/v1/history/get_contract/:name', wrapper(getContract));
@@ -413,7 +414,12 @@ module.exports = (app, DB, swaggerSpec) => {
     let skip = 0;
     let limit = 10;
     let sort = -1;
-    res.json({ transactions: await DB.collection("transactions").find({}).limit(limit).skip(skip).sort({ createdAt: sort }).toArray() });
+    res.json({
+      transactions: await DB.collection("transactions").find({
+        'actions.0.account': { $ne: 'eosio' },
+        'actions.0.name': { $ne: 'onblock' }
+      }).limit(limit).skip(skip).sort({ createdAt: sort }).toArray()
+    });
   }
 
   async function getBlocks(req, res) {
