@@ -2,6 +2,19 @@
 
 const MAX_ELEMENTS = 1000;
 const async = require('async');
+const LRU = require("lru-cache");
+
+const options = {
+  max: 300,
+  // length(n, key) {
+  //   return n * 2 + key.length
+  // },
+  // dispose(key, n) {
+  //   n.close();
+  // },
+  maxAge: 60 * 1000 * 60
+}
+const cache = LRU(options);
 
 const wrapper = fn =>
   (req, res, next) =>
@@ -10,7 +23,6 @@ const wrapper = fn =>
       .catch(next);
 
 module.exports = (app, DB, swaggerSpec) => {
-
   app.get('/api-docs.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(swaggerSpec);
@@ -455,8 +467,7 @@ module.exports = (app, DB, swaggerSpec) => {
       if (err) {
         console.error(err);
         return res.status(500).end();
-      }
-      ;
+      };
       res.json(result);
     });
   }
@@ -603,9 +614,9 @@ module.exports = (app, DB, swaggerSpec) => {
     let firstSetCode;
     let actionCount = 0;
     if (setCodeTimes > 0) {
-      actionCount = await DB.collection('action_traces').countDocuments(
-        { 'act.account': req.params.name }
-      );
+      // actionCount = await DB.collection('action_traces').countDocuments(
+      //   { 'act.account': req.params.name }
+      // );
       lastSetCode = (await DB.collection('action_traces').find(
         { 'act.account': 'eosio', 'act.name': 'setcode', 'act.data.account': req.params.name }
       ).sort({ _id: -1 }).limit(1).toArray())[0];
@@ -620,7 +631,7 @@ module.exports = (app, DB, swaggerSpec) => {
       lastSetCode,
       firstSetCode,
       setCodeTimes,
-      actionCount
+      // actionCount
     };
     res.json(ret);
   }
@@ -657,6 +668,12 @@ module.exports = (app, DB, swaggerSpec) => {
 
     async.parallel({
       actionsTotal: (callback) => {
+        const cacheKey = JSON.stringify(query);
+        const cachedValue = cache.get(cacheKey);
+        if (cachedValue) {
+          callback(null, cachedValue);
+          return;
+        }
         //DB.collection("action_traces").find(query).count(callback);
         //callback(null, "Temporary Unavailable");
         DB.collection("action_traces").aggregate([
@@ -669,6 +686,7 @@ module.exports = (app, DB, swaggerSpec) => {
           if (!result || !result[0] || !result[0].sum) {
             return callback('counter error')
           }
+          cache.set(cacheKey, result[0].sum);
           callback(null, result[0].sum);
         });
       },

@@ -59,11 +59,11 @@ MongoClient.connect( CONFIG.mongoURL, MONGO_OPTIONS, (err, db) => {
 		}
         console.log("=== Database Connected!");
         let dbo = db.db(CONFIG.mongoDB);
-		require('./api/v1.api.history')(app, dbo, swaggerSpec);        
+		require('./api/v1.api.history')(app, dbo, swaggerSpec);
 });
 
 const http 	= require('http').Server(app);
-http.listen(CONFIG.serverPort, () => {
+http.listen(CONFIG.serverPort, '0.0.0.0', () => {
   	 console.log('=== Listening on port:', CONFIG.serverPort);
 });
 http.on('error', (err) => {
