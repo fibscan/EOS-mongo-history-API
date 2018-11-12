@@ -467,7 +467,8 @@ module.exports = (app, DB, swaggerSpec) => {
       if (err) {
         console.error(err);
         return res.status(500).end();
-      };
+      }
+      ;
       res.json(result);
     });
   }
@@ -600,7 +601,7 @@ module.exports = (app, DB, swaggerSpec) => {
     const ret = {
       account: req.params.name,
       createdBy: createdBy ? createdBy.act.data.creator : null,
-      isContract: setCodeTimes > 0,
+      isContract: req.params.name.startsWith('eosio.') || setCodeTimes > 0,
       isProducer
     };
     res.json(ret);
