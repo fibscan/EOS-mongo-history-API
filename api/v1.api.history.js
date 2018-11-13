@@ -12,7 +12,7 @@ const options = {
   // dispose(key, n) {
   //   n.close();
   // },
-  maxAge: 60 * 1000 * 60
+  maxAge: 60 * 1000 * 60 * 12
 }
 const cache = LRU(options);
 
